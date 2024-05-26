@@ -257,9 +257,13 @@ if [ -f /etc/zsh_command_not_found ]; then
     . /etc/zsh_command_not_found
 fi
 
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-#export DISPLAY=$(ip route list default | awk '{print $3}'):0
-#export LIBGL_ALWAYS_INDIRECT=1
+# import zprofile settings
+if [ -f ~/.zprofile ]; then
+    if [[ $ZPROFILE_IMPORTED != true ]]; then
+        echo "Importing ~/.zprofile"
+        . ~/.zprofile
+        unset ZPROFILE_IMPORTED
+    else
+        echo "Already imported ~/.zprofile" > /dev/null
+    fi
+fi
