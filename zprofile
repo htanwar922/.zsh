@@ -13,7 +13,7 @@ if [ `uname -r | grep "WSL"` ]; then
     # export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 fi
 
-SSH_ENV="$HOME/.ssh/agent-environment"
+SSH_ENV="/tmp/.ssh-agent-environment"
 function ssh-agent-start {
    echo "Initialising new SSH agent..."
    /usr/bin/ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"
