@@ -1,0 +1,28 @@
+#!/bin/bash
+
+cd
+
+ln -s .zsh/zshenv .zshenv
+ln -s .zsh/zprofile .zprofile
+ln -s .zsh/zshrc .zshrc
+ln -s .zsh/zlogin .zlogin
+ln -s .zsh/zlogout .zlogout
+
+ln -s .zprofile .bash_profile
+ln -s .zshrc .bashrc
+ln -s .zprofile .profile
+ln -s .zlogin .bash_login
+ln -s .zlogout .bash_logout
+
+if [ ! -d .zsh ]; then
+    read -q '?Do you want to clone zsh from github? [y/n] ' && echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        git clone https://github.com/htanwar922/.zsh.git
+    fi
+else
+	echo -n 'Path to .zsh directory: '; read zsh_path
+	ln -s $zsh_path .zsh
+	unset zsh_path
+fi
+
+chsh -s /bin/zsh

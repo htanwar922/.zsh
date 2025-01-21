@@ -257,13 +257,21 @@ if [ -f /etc/zsh_command_not_found ]; then
     . /etc/zsh_command_not_found
 fi
 
-# import zprofile settings
-if [ -f ~/.zprofile ]; then
-    if [[ $ZPROFILE_IMPORTED != true ]]; then
-        echo "Importing ~/.zprofile"
-        . ~/.zprofile
-        unset ZPROFILE_IMPORTED
-    else
-        echo "Already imported ~/.zprofile" > /dev/null
+if [[ "$0" != "-zsh" ]]; then
+    if [ -f ~/.zprofile ]; then
+        if [[ $ZPROFILE_IMPORTED != true ]]; then
+            echo "Importing ~/.zprofile" > /dev/null
+            . ~/.zprofile
+            unset ZPROFILE_IMPORTED
+        else
+            echo "Already imported ~/.zprofile" > /dev/null
+        fi
     fi
+
+    if [ -f ~/.zlogin ]; then
+        echo "Importing ~/.zlogin" > /dev/null
+        . ~/.zlogin
+    fi
+else
+    echo "zsh is running as a login shell" > /dev/null
 fi

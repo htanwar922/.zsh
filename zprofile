@@ -9,8 +9,3 @@ if [ `uname -r | grep "WSL"` ]; then
     # export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 fi
 
-# Import all .zsh files in ~/.zsh
-for file in ~/.zsh/*.zsh; do
-    source $file
-done
-
