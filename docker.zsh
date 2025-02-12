@@ -213,13 +213,14 @@ function Start-Docker-Container {
 
     eval docker run --rm -d -it --privileged --cap-add=SYS_PTRACE \
         --security-opt seccomp=unconfined --security-opt apparmor=unconfined \
-        --network $network "$remaining" \
         -e TZ=Asia/Kolkata -e DISPLAY=$DISPLAY \
         -v /tmp/.X11-unix:/tmp/.X11-unix \
         -v "$HOME/.ssh:$docker_user_home/.ssh" \
         -v "$HOME/concentrator:$docker_user_home/concentrator" \
         -v "$HOME/Downloads:$docker_user_home/Downloads" \
-        --name $container --user=$docker_user $image sh
+        --network $network --user=$docker_user \
+        "$remaining" \
+        --name $container $image sh
 }
 
 function Invoke-Docker-Container {
@@ -350,7 +351,7 @@ function _Initialize-Docker-Variables-AutoComplete {
         '(-docker_shell)-docker_shell[Shell to be used in container]: :->docker_shell' \
         '(-docker_save)-docker_save[Save container image?]: :->docker_save'
 
-    Set-Docker-AutoComplete-Suggestions
+    _Set-Docker-AutoComplete-Suggestions
 }
 
 function _Initialize-Docker-Image-AutoComplete {
