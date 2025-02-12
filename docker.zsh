@@ -88,13 +88,13 @@ function Initialize-Docker-Variables {
             -v|-docker_save' -- $@) && [[ -n $params ]] && eval local $params || return 1
     fi
 
-    [[ -z $image ]] && echo -n 'Enter image name to create or use [linux-arm(default)]: ' && read image
-    [[ -z $container ]] && echo -n 'Enter container name [linux-arm(default)]: ' && read container
-    [[ -z $network ]] && echo -n 'Enter network name [linux-arm(default)]: ' && read network
-    [[ -z $docker_user ]] && echo -n 'Enter docker username [himanshu(default)]: ' && read docker_user
-    [[ -z $base_image ]] && echo -n 'Enter base image name to (if) create above image from [osrf/ubuntu_armhf:focal(default)]: ' && read base_image
+    [[ -z $image ]] && echo -n 'Enter image name to create or use [dcu-emulator:dev(default)]: ' && read image
+    [[ -z $container ]] && echo -n 'Enter container name [dcu(default)]: ' && read container
+    [[ -z $network ]] && echo -n 'Enter network name [bridge(default)]: ' && read network
+    [[ -z $docker_user ]] && echo -n 'Enter docker username [root(default)]: ' && read docker_user
+    [[ -z $base_image ]] && echo -n 'Enter base image name to (if) create above image from [osrf/ubuntu_armhf:trusty(default)]: ' && read base_image
     [[ -z $docker_shell ]] && echo -n 'Enter shell to be used in container [zsh(default)]: ' && read docker_shell
-    [[ -z $docker_save ]] && echo -n 'Save container image? [true(default)/false]: ' && read docker_save
+    [[ -z $docker_save ]] && echo -n 'Save container image? [true/false(default)]: ' && read docker_save
 
     export IMAGE=${image:-'linux-arm'}
     export CONTAINER=${container:-'linux-arm'}
@@ -102,7 +102,7 @@ function Initialize-Docker-Variables {
     export DOCKER_USER=${docker_user:-'himanshu'}
     export BASE_IMAGE=${base_image:-'osrf/ubuntu_armhf:focal'}
     export DOCKER_SHELL=${docker_shell:-'zsh'}
-    export DOCKER_SAVE=${docker_save:-true}
+    export DOCKER_SAVE=${docker_save:-false}
     echo "IMAGE=$IMAGE, CONTAINER=$CONTAINER, NETWORK=$NETWORK, DOCKER_USER=$DOCKER_USER, BASE_IMAGE=$BASE_IMAGE, DOCKER_SHELL=$DOCKER_SHELL, DOCKER_SAVE=$DOCKER_SAVE"
 }
 
@@ -149,7 +149,8 @@ function Initialize-Docker-Image {
     docker pull $base_image
     docker run --rm -d -it --name $container $base_image sh
 
-    [[ $docker_user == 'root' ]] || docker exec --user=root -it $container useradd -m -G 'adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev' $docker_user
+    [[ $docker_user == 'root' ]] || \
+        docker exec --user=root -it $container useradd -mG 'adm,dialout,cdrom,floppy,sudo,audio,dip,video,plugdev' $docker_user
     docker exec --user=root -it $container apt update
     docker exec --user=root -it $container apt install -y git zsh nano vim build-essential gcc g++ gdb libssl-dev
     docker exec --user=root -it $container apt install -y iputils-ping net-tools iproute2
@@ -199,23 +200,27 @@ function Start-Docker-Container {
 
     [[ $docker_user == 'root' ]] && local docker_user_home='/root' || local docker_user_home="/home/$docker_user"
 
-    docker network inspect $network >/dev/null || docker network create $network
+    docker network inspect $network >/dev/null || \
+        docker network create $network
 
     if [[ "$(docker ps -a --format '" {{.Names}} "')" =~ " $container " ]]; then
         read -q '?Container already exists. Do you want to remove it? [y/N]: ' && echo || return
-        docker stop $container; sleep 1
-        docker rm $container 2>/dev/null; sleep 1
+        docker stop $container
+        sleep 1
+        docker rm $container 2>/dev/null
+        sleep 1
     fi
 
     eval docker run --rm -d -it --privileged --cap-add=SYS_PTRACE \
         --security-opt seccomp=unconfined --security-opt apparmor=unconfined \
-        --network $network "$remaining" \
         -e TZ=Asia/Kolkata -e DISPLAY=$DISPLAY \
         -v /tmp/.X11-unix:/tmp/.X11-unix \
         -v "$HOME/.ssh:$docker_user_home/.ssh" \
         -v "$HOME/concentrator:$docker_user_home/concentrator" \
         -v "$HOME/Downloads:$docker_user_home/Downloads" \
-        --name $container --user=$docker_user $image
+        --network $network --user=$docker_user \
+        "$remaining" \
+        --name $container $image sh
 }
 
 function Invoke-Docker-Container {
@@ -233,8 +238,9 @@ function Invoke-Docker-Container {
 
     [[ -z $cmd && -n $remaining ]] && cmd="$remaining"
     [[ -z $cmd ]] && cmd="$DOCKER_SHELL -ilsc 'cd; $DOCKER_SHELL -ils'"
-    ${SHELL:-''} -c "docker exec --user=$docker_user -it $container $cmd"
-    [[ $DOCKER_SAVE == true ]] && Save-Docker-Container -container $container
+    ${SHELL:-'sh'} -c "docker exec --user=$docker_user -it $container $cmd"
+    [[ $DOCKER_SAVE == true ]] &&
+        Save-Docker-Container -container $container
 }
 
 function Save-Docker-Container {
@@ -247,7 +253,9 @@ function Save-Docker-Container {
             -i|-image' -- $@) && [[ -n $params ]] && eval local $params || return 1
     fi
 
-    [[ -z $image ]] && image=$(docker inspect --format='{{.Config.Image}}' $container)
+    [[ -z $image ]] && \
+        image=$(docker inspect --format='{{.Config.Image}}' $container)
+
     echo "Saving container $container as image $image"
     docker commit $container $image
 }
@@ -299,11 +307,13 @@ function Stop-Docker-Container {
             -c|-container' -- $@) && [[ -n $params ]] && eval local $params || return 1
     fi
 
-    [[ $DOCKER_SAVE == true ]] && Save-Docker-Container -container $container
+    [[ $DOCKER_SAVE == true ]] && \
+        Save-Docker-Container -container $container
+
     Remove-Docker-Container -container $container
 }
 
-function _Set-Docker-AutoComplete-Suggestions {
+function Set-Docker-AutoComplete-Suggestions {
     _docker
     case $state in
         image)
@@ -352,7 +362,7 @@ function _Initialize-Docker-Image-AutoComplete {
         '(-docker_user)-docker_user[Docker username]: :->docker_user' \
         '(-install)-install[Install docker]: :->install'
 
-    _Set-Docker-AutoComplete-Suggestions
+    Set-Docker-AutoComplete-Suggestions
 }
 
 function _Start-Docker-Container-AutoComplete {
@@ -362,7 +372,7 @@ function _Start-Docker-Container-AutoComplete {
         '(-network)-network[Network name]: :->network' \
         '(-docker_user)-docker_user[Docker username]: :->docker_user'
 
-    _Set-Docker-AutoComplete-Suggestions
+    Set-Docker-AutoComplete-Suggestions
 }
 
 function _Invoke-Docker-Container-AutoComplete {
@@ -371,7 +381,7 @@ function _Invoke-Docker-Container-AutoComplete {
         '(-docker_user)-docker_user[Docker username]: :->docker_user' \
         '(-cmd)-cmd[Command to run]: :->cmd'
 
-    _Set-Docker-AutoComplete-Suggestions
+    Set-Docker-AutoComplete-Suggestions
 }
 
 function _Save-Docker-Container-AutoComplete {
@@ -379,7 +389,7 @@ function _Save-Docker-Container-AutoComplete {
         '(-container)-container[Container name]: :->container' \
         '(-image)-image[Image name to save as]: :->image'
 
-    _Set-Docker-AutoComplete-Suggestions
+    Set-Docker-AutoComplete-Suggestions
 }
 
 function _Remove-Docker-Container-AutoComplete {
@@ -387,14 +397,14 @@ function _Remove-Docker-Container-AutoComplete {
         '(-container)-container[Container name]: :->container' \
         '(-force)-force[Force remove container]: :->force'
 
-    _Set-Docker-AutoComplete-Suggestions
+    Set-Docker-AutoComplete-Suggestions
 }
 
 function _Stop-Docker-Container-AutoComplete {
     _arguments \
         '(-container)-container[Container name]: :->container'
 
-    _Set-Docker-AutoComplete-Suggestions
+    Set-Docker-AutoComplete-Suggestions
 }
 
 compdef _Initialize-Docker-Variables-AutoComplete Initialize-Docker-Variables
@@ -412,52 +422,3 @@ alias docker-stop-container='Stop-Docker-Container'
 alias docker-cleanup-container='Remove-Docker-Container'
 alias docker-save-container='Save-Docker-Container'
 alias docker-clear-images='Clear-Docker-Images'
-
-
-# _docker () {
-#     if [[ $service != docker ]]
-#     then
-#             _call_function - _$service
-#             return
-#     fi
-#     echo $curcontext
-#     local curcontext="$curcontext" state line help="-h --help"
-#     integer ret=1
-#     typeset -A opt_args
-#     _arguments $(__docker_arguments) -C \
-#         "(: -)"{-h,--help}"[Print usage]" \
-#         "($help)--config[Location of client config files]:path:_directories" \
-#         "($help -c --context)"{-c=,--context=}"[Execute the command in a docker context]:context:__docker_complete_contexts" \
-#         "($help -D --debug)"{-D,--debug}"[Enable debug mode]" \
-#         "($help -H --host)"{-H=,--host=}"[tcp://host:port to bind/connect to]:host: " \
-#         "($help -l --log-level)"{-l=,--log-level=}"[Logging level]:level:(debug info warn error fatal)" \
-#         "($help)--tls[Use TLS]" \
-#         "($help)--tlscacert=[Trust certs signed only by this CA]:PEM file:_files -g "*.(pem|crt)"" \
-#         "($help)--tlscert=[Path to TLS certificate file]:PEM file:_files -g "*.(pem|crt)"" \
-#         "($help)--tlskey=[Path to TLS key file]:Key file:_files -g "*.(pem|key)"" \
-#         "($help)--tlsverify[Use TLS and verify the remote]" \
-#         "($help)--userland-proxy[Use userland proxy for loopback traffic]" \
-#         "($help -v --version)"{-v,--version}"[Print version information and quit]" \
-#         "($help -): :->command" "($help -)*:: :->option-or-argument" && ret=0
-#     local host=${opt_args[-H]}${opt_args[--host]}
-#     local config=${opt_args[--config]}
-#     local context=${opt_args[-c]}${opt_args[--context]}
-#     local docker_options="${host:+--host $host} ${config:+--config $config} ${context:+--context $context} "
-#     echo
-#     echo $curcontext
-#     echo "${curcontext%:*:*}:docker-$words[1]:"
-#     echo $state "$words[@]"
-#     echo
-#             state=option-or-argument
-#     case $state in
-#             (command) __docker_commands && ret=0; echo ok  ;;
-#             (option-or-argument) curcontext=${curcontext%:*:*}:docker-$words[1]:
-#                         echo
-#                         echo $curcontext
-#                         echo "${curcontext%:*:*}:docker-$words[1]:"
-#                         echo $state $words[1]
-#                         echo
-#                         __docker_subcommand && ret=0  ;;
-#     esac
-#     return ret
-# }

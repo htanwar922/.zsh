@@ -9,7 +9,13 @@ if [ `uname -r | grep "WSL"` ]; then
     # export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 fi
 
-source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
-source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 export PROMPT=$'\e[34m┌──(\e[1;31m%n㉿%m\e[0m\e[34m)-[\e[1;37m%~\e[0m\e[34m]
 └─\e[1;31m# \e[0m'
+
+if [ -f ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
+    source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
+fi
+
+if [ -f ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]; then
+    source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+fi
