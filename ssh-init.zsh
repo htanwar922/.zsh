@@ -1,6 +1,6 @@
 # Description: Start ssh-agent and add all keys.
 
-SSH_ENV="/tmp/.ssh-agent-environment"
+SSH_ENV="/tmp/.ssh-agent-environment-$(whoami)"
 function ssh-agent-start {
    echo "Initialising new SSH agent..."
    /usr/bin/ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"

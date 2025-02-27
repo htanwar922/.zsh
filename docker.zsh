@@ -62,10 +62,14 @@ function Get-Opts {
             return 1
         fi
 
+        # replace - with _ in $opt, for example no-mounts -> no_mounts
+        opt=${${opt#-}#-}
+        opt=$(echo $opt | sed 's/-/_/g')
+
         if [[ -z $1 ]] || [[ $1 == "-"* ]]; then
-            output="$output ${${opt#-}#-}=true"
+            output="$output $opt=true"
         else
-            output="$output ${opt#-}='$1'"
+            output="$output $opt='$1'"
             shift
         fi
     done
@@ -189,13 +193,18 @@ function Start-Docker-Container {
     local image=$IMAGE
     local network=$NETWORK
     local docker_user=$DOCKER_USER
+    local no_mounts=false
+    local no_cmd=false
 
     if (( $# )); then
         local params=$(Get-Opts '
             -i|-image
             -c|-container
             -n|-network
-            -u|-docker_user' --remaining -- $@) && [[ -n $params ]] && eval local $params || return 1
+            -u|-docker_user
+            --no-mounts
+            --no-cmd
+            --trace' --remaining -- $@) && [[ -n $params ]] && eval local $params || return 1
     fi
 
     [[ $docker_user == 'root' ]] && local docker_user_home='/root' || local docker_user_home="/home/$docker_user"
@@ -211,16 +220,34 @@ function Start-Docker-Container {
         sleep 1
     fi
 
-    eval docker run --rm -d -it --privileged --cap-add=SYS_PTRACE \
-        --security-opt seccomp=unconfined --security-opt apparmor=unconfined \
-        -e TZ=Asia/Kolkata -e DISPLAY=$DISPLAY \
-        -v /tmp/.X11-unix:/tmp/.X11-unix \
-        -v "$HOME/.ssh:$docker_user_home/.ssh" \
-        -v "$HOME/concentrator:$docker_user_home/concentrator" \
-        -v "$HOME/Downloads:$docker_user_home/Downloads" \
-        --network $network --user=$docker_user \
-        "$remaining" \
-        --name $container $image sh
+    local params=''
+    params="$params --rm"
+    params="$params -d"
+    params="$params -it"
+    params="$params --privileged"
+    params="$params --cap-add=SYS_PTRACE"
+    params="$params --cap-add=NET_ADMIN"
+    params="$params --security-opt seccomp=unconfined"
+    params="$params --security-opt apparmor=unconfined"
+    params="$params -e TZ=Asia/Kolkata"
+
+    if [[ $no_mounts != true ]]; then
+        params="$params -e DISPLAY=$DISPLAY"
+        params="$params -v /tmp/.X11-unix:/tmp/.X11-unix"
+        params="$params -v $HOME/.ssh:$docker_user_home/.ssh"
+        params="$params -v $HOME/concentrator:$docker_user_home/concentrator"
+        params="$params -v $HOME/Downloads:$docker_user_home/Downloads"
+    fi
+
+    params="$params --network $network"
+    params="$params --user=$docker_user"
+    params="$params $remaining"
+
+    if [[ $trace == true ]]; then
+        echo docker run $params --name $container $image $( [[ $no_cmd == true ]] || echo $DOCKER_SHELL )
+    fi
+
+    eval docker run $params --name $container $image $( [[ $no_cmd == true ]] || echo $DOCKER_SHELL )
 }
 
 function Invoke-Docker-Container {
@@ -351,7 +378,7 @@ function _Initialize-Docker-Variables-AutoComplete {
         '(-docker_shell)-docker_shell[Shell to be used in container]: :->docker_shell' \
         '(-docker_save)-docker_save[Save container image?]: :->docker_save'
 
-    _Set-Docker-AutoComplete-Suggestions
+    Set-Docker-AutoComplete-Suggestions
 }
 
 function _Initialize-Docker-Image-AutoComplete {
@@ -370,7 +397,9 @@ function _Start-Docker-Container-AutoComplete {
         '(-image)-image[Image name to create or use]: :->image' \
         '(-container)-container[Container name]: :->container' \
         '(-network)-network[Network name]: :->network' \
-        '(-docker_user)-docker_user[Docker username]: :->docker_user'
+        '(-docker_user)-docker_user[Docker username]: :->docker_user' \
+        '(-no-mounts)--no-mounts[Do not mount volumes]' \
+        '(-no-cmd)--no-cmd[Do not run command]' \
 
     Set-Docker-AutoComplete-Suggestions
 }
