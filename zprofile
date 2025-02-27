@@ -9,9 +9,6 @@ if [ `uname -r | grep "WSL"` ]; then
     # export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 fi
 
-export PROMPT=$'\e[34m┌──(\e[1;31m%n㉿%m\e[0m\e[34m)-[\e[1;37m%~\e[0m\e[34m]
-└─\e[1;31m# \e[0m'
-
 if [ -f ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
     source ~/.zsh/zsh-autosuggestions/zsh-autosuggestions.zsh
 fi
