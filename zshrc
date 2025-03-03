@@ -226,7 +226,7 @@ if [ -x /usr/bin/dircolors ]; then
     alias grep='grep --color=auto'
     alias fgrep='fgrep --color=auto'
     alias egrep='egrep --color=auto'
-    alias diff='diff --color=auto'
+    # alias diff='diff --color=auto'
     # alias ip='ip --color=auto'
 
     export LESS_TERMCAP_mb=$'\E[1;31m'     # begin blink
@@ -277,5 +277,3 @@ if [[ "$0" != "-zsh" ]]; then
 else
     echo "zsh is running as a login shell" > /dev/null
 fi
-
-. ~/.zprofile
