@@ -7,7 +7,7 @@ export DOCKER_USER=${DOCKER_USER:-'himanshu'}
 export BASE_IMAGE=${BASE_IMAGE:-'debian'}
 
 export DOCKER_SHELL=${DOCKER_SHELL:-'zsh'}
-export DOCKER_SAVE=${DOCKER_SAVE:-true}
+export DOCKER_SAVE=${DOCKER_SAVE:-false}
 
 export true=true
 export false=false
@@ -254,11 +254,13 @@ function Invoke-Docker-Container {
     local cmd
     local container=$CONTAINER
     local docker_user=$DOCKER_USER
+    local save=false
 
     if (( $# )); then
         local params=$(Get-Opts '
             -c|-container
             -u|-docker_user
+            --save
             -cmd' --remaining -- $@) && [[ -n $params ]] && eval local $params || return 1
     fi
     echo $params
@@ -266,7 +268,7 @@ function Invoke-Docker-Container {
     [[ -z $cmd && -n $remaining ]] && cmd="$remaining"
     [[ -z $cmd ]] && cmd="$DOCKER_SHELL -ilsc 'cd; $DOCKER_SHELL -ils'"
     ${SHELL:-'sh'} -c "docker exec --user=$docker_user -it $container $cmd"
-    [[ $DOCKER_SAVE == true ]] &&
+    [[ $DOCKER_SAVE == true || $save == true ]] && \
         Save-Docker-Container -container $container
 }
 
@@ -285,6 +287,7 @@ function Save-Docker-Container {
 
     echo "Saving container $container as image $image"
     docker commit $container $image
+    return $?
 }
 
 function Clear-Docker-Images {
@@ -334,8 +337,11 @@ function Stop-Docker-Container {
             -c|-container' -- $@) && [[ -n $params ]] && eval local $params || return 1
     fi
 
-    [[ $DOCKER_SAVE == true ]] && \
-        Save-Docker-Container -container $container
+    read -q '?Save container before removing ? [y/N]: ' && {
+        echo
+        Save-Docker-Container -container $container || echo 'Failed to save container' && return $?
+        echo "Container $container saved as image $image"
+    } || echo
 
     Remove-Docker-Container -container $container
 }
@@ -408,6 +414,7 @@ function _Invoke-Docker-Container-AutoComplete {
     _arguments \
         '(-container)-container[Container name]: :->container' \
         '(-docker_user)-docker_user[Docker username]: :->docker_user' \
+        '(-save)--save[Save container on exit]' \
         '(-cmd)-cmd[Command to run]: :->cmd'
 
     Set-Docker-AutoComplete-Suggestions
