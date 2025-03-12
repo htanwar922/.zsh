@@ -254,11 +254,13 @@ function Invoke-Docker-Container {
     local cmd
     local container=$CONTAINER
     local docker_user=$DOCKER_USER
+    local no_save=false
 
     if (( $# )); then
         local params=$(Get-Opts '
             -c|-container
             -u|-docker_user
+            --no-save
             -cmd' --remaining -- $@) && [[ -n $params ]] && eval local $params || return 1
     fi
     echo $params
@@ -266,7 +268,7 @@ function Invoke-Docker-Container {
     [[ -z $cmd && -n $remaining ]] && cmd="$remaining"
     [[ -z $cmd ]] && cmd="$DOCKER_SHELL -ilsc 'cd; $DOCKER_SHELL -ils'"
     ${SHELL:-'sh'} -c "docker exec --user=$docker_user -it $container $cmd"
-    [[ $DOCKER_SAVE == true ]] &&
+    [[ $DOCKER_SAVE == true && $no_save != true ]] && \
         Save-Docker-Container -container $container
 }
 
@@ -408,6 +410,7 @@ function _Invoke-Docker-Container-AutoComplete {
     _arguments \
         '(-container)-container[Container name]: :->container' \
         '(-docker_user)-docker_user[Docker username]: :->docker_user' \
+        '(-no-save)--no-save[Do not save container]' \
         '(-cmd)-cmd[Command to run]: :->cmd'
 
     Set-Docker-AutoComplete-Suggestions
