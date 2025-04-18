@@ -1,6 +1,7 @@
 #!/bin/zsh
 
-function append-to-prompt() {
-    export PROMPT=$(echo $PROMPT | sed "s/]/] $@/")
+function prompt-suffix() {
+    # export PROMPT=$(echo $PROMPT | sed "s/]/] $@/")
+    export PROMPT_SUFFIX=" $@"
 }
 
