@@ -3,7 +3,7 @@
 export IMAGE=${IMAGE:-'linux'}
 export CONTAINER=${CONTAINER:-'linux'}
 export NETWORK=${NETWORK:-'bridge'}
-export DOCKER_USER=${DOCKER_USER:-'himanshu'}
+export DOCKER_USER=${DOCKER_USER:-'root'}
 export BASE_IMAGE=${BASE_IMAGE:-'debian'}
 
 export DOCKER_SHELL=${DOCKER_SHELL:-'zsh'}

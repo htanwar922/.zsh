@@ -8,11 +8,14 @@ ln -s .zsh/zshrc .zshrc
 ln -s .zsh/zlogin .zlogin
 ln -s .zsh/zlogout .zlogout
 
-[[ -f .bash_profile && ! -L .bash_profile ]] && mv .bash_profile .bash_profile.bak
-[[ -f .bashrc && ! -L .bashrc ]] && mv .bashrc .bashrc.bak
-[[ -f .profile && ! -L .profile ]] && mv .profile .profile.bak
-[[ -f .bash_login && ! -L .bash_login ]] && mv .bash_login .bash_login.bak
-[[ -f .bash_logout && ! -L .bash_logout ]] && mv .bash_logout .bash_logout.bak
+read -q '?Backup and Replace bash scripts with zsh ones? [y/N] '; echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    [[ -f .bash_profile && ! -L .bash_profile ]] && mv .bash_profile .bash_profile.bak
+    [[ -f .bashrc && ! -L .bashrc ]] && mv .bashrc .bashrc.bak
+    [[ -f .profile && ! -L .profile ]] && mv .profile .profile.bak
+    [[ -f .bash_login && ! -L .bash_login ]] && mv .bash_login .bash_login.bak
+    [[ -f .bash_logout && ! -L .bash_logout ]] && mv .bash_logout .bash_logout.bak
+fi
 
 ln -s .zprofile .bash_profile
 ln -s .zshrc .bashrc
