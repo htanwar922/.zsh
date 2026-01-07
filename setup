@@ -15,13 +15,13 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     [[ -f .profile && ! -L .profile ]] && mv .profile .profile.bak
     [[ -f .bash_login && ! -L .bash_login ]] && mv .bash_login .bash_login.bak
     [[ -f .bash_logout && ! -L .bash_logout ]] && mv .bash_logout .bash_logout.bak
-fi
 
-ln -s .zprofile .bash_profile
-ln -s .zshrc .bashrc
-ln -s .zprofile .profile
-ln -s .zlogin .bash_login
-ln -s .zlogout .bash_logout
+    ln -s .zprofile .bash_profile
+    ln -s .zshrc .bashrc
+    ln -s .zprofile .profile
+    ln -s .zlogin .bash_login
+    ln -s .zlogout .bash_logout
+fi
 
 if [ ! -d .zsh ]; then
     read -q '?Do you want to clone zsh from github? [y/N] '; echo
