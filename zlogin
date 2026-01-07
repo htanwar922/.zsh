@@ -6,6 +6,6 @@ for file in ~/.zsh/*.zsh; do
     source $file
 done
 
-for file in ~/.zsh/custom*.zsh; do
+for file in $(find ~/.zsh -type f -name 'custom*.zsh'); do
     source $file
 done
